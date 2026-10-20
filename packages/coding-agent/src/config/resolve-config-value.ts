@@ -129,7 +129,8 @@ export async function runShellCommand(
 			return trimmed.length > 0 ? trimmed : undefined;
 		}
 
-		const result = await ptree.exec(["/bin/sh", "-c", command], {
+		const shell = process.platform === "android" ? "/system/bin/sh" : "/bin/sh";
+		const result = await ptree.exec([shell, "-c", command], {
 			cwd,
 			timeout: timeoutMs,
 			allowNonZero: true,

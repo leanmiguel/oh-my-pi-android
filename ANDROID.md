@@ -48,7 +48,8 @@ extracted using upstream's existing version-stamped loader. Native segments use
 16 KB page alignment for Android devices with 16 KB pages.
 
 Android changes are restricted to the native loader identity, Termux clipboard
-bridge, Linux-compatible process primitives with a pidfd fallback, and Android
+bridge, Android's system shell for command-backed configuration values,
+Linux-compatible process primitives with a pidfd fallback, and Android
 build/install scripts. Upstream feature implementation and package names stay in
 place. Android signalling falls back to a numeric PID when the kernel denies
 pidfd access; the start-time check narrows, but cannot remove, the PID-reuse race.
