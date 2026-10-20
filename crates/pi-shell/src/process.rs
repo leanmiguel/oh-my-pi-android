@@ -16,7 +16,7 @@ pub use pi_builtins::ProcessStatus;
 
 use crate::cancel::CancelToken;
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "android"))]
 mod platform {
 	use std::{
 		collections::HashSet,
@@ -33,7 +33,7 @@ mod platform {
 	#[derive(Clone)]
 	pub struct Process {
 		pid:        i32,
-		pidfd:      Arc<OwnedFd>,
+		pidfd:      Option<Arc<OwnedFd>>,
 		start_time: u64,
 	}
 
@@ -42,7 +42,12 @@ mod platform {
 			if pid <= 0 {
 				return None;
 			}
-			let pidfd = Arc::new(sys::open_pidfd(pid)?);
+			let pidfd = sys::open_pidfd(pid).map(Arc::new);
+			// Linux retains its pidfd-only contract. Android kernels may deny
+			// pidfd_open.
+			if cfg!(target_os = "linux") && pidfd.is_none() {
+				return None;
+			}
 			let start_time = sys::start_time(pid)?;
 			Some(Self { pid, pidfd, start_time })
 		}
@@ -148,7 +153,16 @@ mod platform {
 		}
 
 		pub fn kill(&self, signal: i32) -> bool {
-			sys::pidfd_send_signal(self.pidfd.as_fd(), signal)
+			if let Some(pidfd) = &self.pidfd {
+				return sys::pidfd_send_signal(pidfd.as_fd(), signal);
+			}
+			if !self.live_identity() {
+				return false;
+			}
+			// SAFETY: the start-time check rejects a recycled PID before this
+			// syscall. Numeric PID signalling still has the unavoidable
+			// check/kill race.
+			unsafe { libc::kill(self.pid, signal) == 0 }
 		}
 
 		pub fn group_id(&self) -> Option<i32> {
@@ -164,9 +178,16 @@ mod platform {
 		}
 
 		pub fn status(&self) -> ProcessStatus {
+			let Some(pidfd) = &self.pidfd else {
+				return if sys::is_running(self.pid, self.start_time) {
+					ProcessStatus::Running
+				} else {
+					ProcessStatus::Exited
+				};
+			};
 			loop {
 				let mut pollfd =
-					libc::pollfd { fd: self.pidfd.as_raw_fd(), events: libc::POLLIN, revents: 0 };
+					libc::pollfd { fd: pidfd.as_raw_fd(), events: libc::POLLIN, revents: 0 };
 				// SAFETY: `pollfd` points to one initialized `pollfd` element, and
 				// the pidfd remains open for the duration of the call. Timeout
 				// zero makes this a non-blocking readiness probe.
@@ -196,8 +217,14 @@ mod platform {
 
 		/// Resolves once the process exits: its pidfd becomes readable then.
 		pub async fn exited(&self) -> std::io::Result<()> {
+			let Some(pidfd) = &self.pidfd else {
+				while self.status() == ProcessStatus::Running {
+					tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+				}
+				return Ok(());
+			};
 			let pidfd = tokio::io::unix::AsyncFd::with_interest(
-				self.pidfd.try_clone()?,
+				pidfd.try_clone()?,
 				tokio::io::Interest::READABLE,
 			)?;
 			let _ready = pidfd.readable().await?;

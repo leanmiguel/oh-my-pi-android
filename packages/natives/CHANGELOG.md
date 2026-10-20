@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added Android ARM64 addon loading, Termux text clipboard integration, and Android process-tree support
+
 ### Changed
 
 - Reduced native Git diff allocation overhead ([#16349](https://github.com/can1357/oh-my-pi/pull/16349) by [@kyle-elliott](https://github.com/kyle-elliott))

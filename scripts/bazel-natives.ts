@@ -103,6 +103,7 @@ export function hostTargetName(host: HostInfo): string {
 			return host.avx2 ? "linux-x64-modern" : "linux-x64-baseline";
 		}
 	}
+	if (host.platform === "android" && host.arch === "arm64") return "android-arm64";
 	if (host.platform === "win32") {
 		if (host.arch === "x64") return "win32-x64-baseline";
 		if (host.arch === "arm64") return "win32-arm64";

@@ -35,6 +35,8 @@ impl AxHandle {
 	/// index.
 	const fn identified(&self) -> bool {
 		match self {
+			#[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux", test)))]
+			_ => match *self {},
 			#[cfg(target_os = "macos")]
 			Self::Mac(_) => true,
 			#[cfg(target_os = "windows")]
@@ -55,6 +57,8 @@ impl AxHandle {
 impl PartialEq for AxHandle {
 	fn eq(&self, other: &Self) -> bool {
 		match (self, other) {
+			#[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux", test)))]
+			_ => match *self {},
 			#[cfg(target_os = "macos")]
 			(Self::Mac(a), Self::Mac(b)) => **a == **b,
 			#[cfg(target_os = "windows")]
@@ -76,6 +80,8 @@ impl Eq for AxHandle {}
 impl Hash for AxHandle {
 	fn hash<H: Hasher>(&self, state: &mut H) {
 		match self {
+			#[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux", test)))]
+			_ => match *self {},
 			#[cfg(target_os = "macos")]
 			Self::Mac(element) => (**element).hash(state),
 			#[cfg(target_os = "windows")]
