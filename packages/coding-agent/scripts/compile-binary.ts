@@ -30,6 +30,8 @@ export interface CodingAgentCompileOptions {
 	readonly executablePath?: string;
 	/** Match release builds that minify identifiers while retaining names. */
 	readonly minifyIdentifiers?: boolean;
+	/** Android cross-builds omit architecture-specific JSC bytecode. */
+	readonly bytecode?: boolean;
 	/** Disable Bun's built-in Darwin signing before the caller re-signs. */
 	readonly skipBuiltinCodesign?: boolean;
 }
@@ -58,7 +60,7 @@ export async function compileCodingAgent(options: CodingAgentCompileOptions): Pr
 			// `omp --version` 256 ms -> 30 ms on M4 Max (+52 MB binary).
 			// Keep import.meta.resolve in bundled dependencies valid under bytecode.
 			format: "esm",
-			bytecode: true,
+			bytecode: options.bytecode ?? true,
 			splitting: true,
 			// Discovery entry chunks can share a hash; include their source names to avoid collisions.
 			naming: { chunk: "chunks/[name]-[hash].[ext]" },

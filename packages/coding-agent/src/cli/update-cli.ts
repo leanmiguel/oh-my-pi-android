@@ -2283,6 +2283,12 @@ export async function runUpdateCommand(opts: {
 	check: boolean;
 	channel?: UpdateChannel;
 }): Promise<void> {
+	if (process.platform === "android") {
+		console.log(
+			"Update this Android build with the oh-my-pi-android installer: https://github.com/leanmiguel/oh-my-pi-android/blob/android/ANDROID.md",
+		);
+		return;
+	}
 	const ompPath = resolveOmpPath();
 	const manager = ompPath ? await managedInstallName(ompPath) : undefined;
 	if (manager) {
