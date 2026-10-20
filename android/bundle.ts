@@ -12,6 +12,8 @@ await compileCodingAgent({
 	entrypoint: path.join(repoRoot, "packages/coding-agent/src/cli.ts"),
 	outfile: path.join(repoRoot, "android/dist/omp"),
 	executablePath,
+	// Bun 1.4.3 supports this target; the workspace's Bun types predate its addition.
+	target: "bun-linux-arm64-android" as Bun.Build.CompileTarget,
 	transformersVersion: transformers.version,
 	native: { platform: "android", arch: "arm64" },
 	bytecode: false,
